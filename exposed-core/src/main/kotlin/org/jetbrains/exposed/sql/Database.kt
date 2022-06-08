@@ -3,7 +3,6 @@ package org.jetbrains.exposed.sql
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.exposed.sql.statements.api.ExposedConnection
 import org.jetbrains.exposed.sql.statements.api.ExposedDatabaseMetadata
-import org.jetbrains.exposed.sql.transactions.DEFAULT_ISOLATION_LEVEL
 import org.jetbrains.exposed.sql.transactions.ThreadLocalTransactionManager
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.vendors.*
@@ -83,7 +82,8 @@ class Database private constructor(
             "jdbc:mariadb" to "org.mariadb.jdbc.Driver",
             "jdbc:oracle" to "oracle.jdbc.OracleDriver",
             "jdbc:sqlite" to "org.sqlite.JDBC",
-            "jdbc:sqlserver" to "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+            "jdbc:sqlserver" to "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+            "jdbc:spanner" to "com.google.cloud.spanner.jdbc.JdbcDriver"
         )
         private val dialectMapping = mutableMapOf(
             "jdbc:h2" to H2Dialect.dialectName,
@@ -93,7 +93,8 @@ class Database private constructor(
             "jdbc:mariadb" to MariaDBDialect.dialectName,
             "jdbc:oracle" to OracleDialect.dialectName,
             "jdbc:sqlite" to SQLiteDialect.dialectName,
-            "jdbc:sqlserver" to SQLServerDialect.dialectName
+            "jdbc:sqlserver" to SQLServerDialect.dialectName,
+            "jdbc:spanner" to SpannerDialect.dialectName
         )
 
         init {
@@ -105,6 +106,7 @@ class Database private constructor(
             registerDialect(OracleDialect.dialectName) { OracleDialect() }
             registerDialect(SQLServerDialect.dialectName) { SQLServerDialect() }
             registerDialect(MariaDBDialect.dialectName) { MariaDBDialect() }
+            registerDialect(SpannerDialect.dialectName) { SpannerDialect() }
         }
 
         fun registerDialect(prefix: String, dialect: () -> DatabaseDialect) {

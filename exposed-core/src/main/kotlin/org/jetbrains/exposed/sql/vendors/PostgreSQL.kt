@@ -111,6 +111,7 @@ internal object PostgreSQLFunctionProvider : FunctionProvider() {
         return if (ignore) "$def $onConflictIgnore" else def
     }
 
+    @Suppress("KotlinConstantConditions")
     override fun update(
         target: Table,
         columnsAndValues: List<Pair<Column<*>, Any?>>,
@@ -147,12 +148,10 @@ internal object PostgreSQLFunctionProvider : FunctionProvider() {
             registerArgument(col, value)
         }
         +" FROM "
-        if (targets.table != tableToUpdate)
-            targets.table.describe(transaction, this)
+        if (targets.table != tableToUpdate) targets.table.describe(transaction, this)
 
         targets.joinParts.appendTo(this, ",") {
-            if (it.joinPart != tableToUpdate)
-                it.joinPart.describe(transaction, this)
+            if (it.joinPart != tableToUpdate) it.joinPart.describe(transaction, this)
         }
         +" WHERE "
         targets.joinParts.appendTo(this, " AND ") {
@@ -191,6 +190,7 @@ internal object PostgreSQLFunctionProvider : FunctionProvider() {
         }
     }
 
+    @Suppress("KotlinConstantConditions")
     override fun delete(
         ignore: Boolean,
         table: Table,
@@ -213,29 +213,31 @@ open class PostgreSQLDialect : VendorDialect(dialectName, PostgreSQLDataTypeProv
 
     override fun isAllowedAsColumnDefault(e: Expression<*>): Boolean = true
 
-    override fun modifyColumn(column: Column<*>, columnDiff: ColumnDiff): List<String> = listOf(buildString {
-        val tr = TransactionManager.current()
-        append("ALTER TABLE ${tr.identity(column.table)} ")
-        val colName = tr.identity(column)
-        append("ALTER COLUMN $colName TYPE ${column.columnType.sqlType()}")
+    override fun modifyColumn(column: Column<*>, columnDiff: ColumnDiff): List<String> = listOf(
+        buildString {
+            val tr = TransactionManager.current()
+            append("ALTER TABLE ${tr.identity(column.table)} ")
+            val colName = tr.identity(column)
+            append("ALTER COLUMN $colName TYPE ${column.columnType.sqlType()}")
 
-        if (columnDiff.nullability) {
-            append(", ALTER COLUMN $colName ")
-            if (column.columnType.nullable) {
-                append("DROP ")
-            } else {
-                append("SET ")
+            if (columnDiff.nullability) {
+                append(", ALTER COLUMN $colName ")
+                if (column.columnType.nullable) {
+                    append("DROP ")
+                } else {
+                    append("SET ")
+                }
+                append("NOT NULL")
             }
-            append("NOT NULL")
-        }
-        if (columnDiff.defaults) {
-            column.dbDefaultValue?.let {
-                append(", ALTER COLUMN $colName SET DEFAULT ${PostgreSQLDataTypeProvider.processForDefaultValue(it)}")
-            } ?: run {
-                ",  ALTER COLUMN $colName DROP DEFAULT"
+            if (columnDiff.defaults) {
+                column.dbDefaultValue?.let {
+                    append(", ALTER COLUMN $colName SET DEFAULT ${PostgreSQLDataTypeProvider.processForDefaultValue(it)}")
+                } ?: run {
+                    ",  ALTER COLUMN $colName DROP DEFAULT"
+                }
             }
         }
-    })
+    )
 
     override fun createDatabase(name: String): String = "CREATE DATABASE ${name.inProperCase()}"
 

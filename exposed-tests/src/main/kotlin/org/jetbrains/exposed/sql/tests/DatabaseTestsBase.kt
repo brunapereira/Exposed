@@ -13,6 +13,7 @@ import java.sql.Connection
 import java.util.*
 import kotlin.concurrent.thread
 import kotlin.reflect.KMutableProperty1
+import kotlin.reflect.KProperty
 import kotlin.reflect.full.declaredMemberProperties
 
 enum class TestDB(
@@ -99,6 +100,15 @@ enum class TestDB(
                 ":${System.getProperty("exposed.test.mariadb.port", "3306")}/testdb"
         },
         "org.mariadb.jdbc.Driver"
+    ),
+
+    SPANNER(
+        {
+            "jdbc:cloudspanner://${System.getProperty("exposed.test.spanner.host", "localhost")}" +
+                ":${System.getProperty("exposed.test.spanner.port", "9011")}/projects/exposed-emulator" +
+                "/instances/exposed-instance/databases/testdb;usePlainText=true"
+        },
+        "com.google.cloud.spanner.jdbc.JdbcDriver"
     );
 
     var db: Database? = null
@@ -124,11 +134,7 @@ enum class TestDB(
 private val registeredOnShutdown = HashSet<TestDB>()
 
 private val postgresSQLProcess by lazy {
-    EmbeddedPostgres.builder()
-        .setPgBinaryResolver { system, _ ->
-            EmbeddedPostgres::class.java.getResourceAsStream("/postgresql-$system-x86_64.txz")
-        }
-        .setPort(12346).start()
+    EmbeddedPostgres.builder().start()
 }
 
 // MySQLContainer has to be extended, otherwise it leads to Kotlin compiler issues: https://github.com/testcontainers/testcontainers-java/issues/318
